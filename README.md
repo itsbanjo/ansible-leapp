@@ -5,7 +5,9 @@
 You need to make sure that the following are promoted in the Content View (CV) of the Host
 
 Red Hat Enterprise Linux 8 for x86_64 - BaseOS RPMs **8.2** 
+
 Red Hat Enterprise Linux 8 for x86_64 - AppStream RPMs **8.2**
+
 Red Hat Enterprise Linux 8 for x86_64 - Supplementary RPMs **8.2**
 
 **Instructions**
