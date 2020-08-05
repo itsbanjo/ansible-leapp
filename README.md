@@ -1,5 +1,6 @@
 **DISCLAIMER**:
-   I've tested this playbook in my Satellite network using a vanilla RHEL **7.8** 
+   I've tested this playbook in my Satellite network using a vanilla RHEL **7.8**. 
+   **DO NOT USE THIS IN PRODUCTION HOST**
    
 **PREREQUISITE**:
 You need to make sure that the following are promoted in the Content View (CV) of the Host
@@ -17,4 +18,7 @@ By default, the playbook will run against **localhost**
 2. git clone this repo
 3. Edit the inventory file if you need to run the playbook to a different host. 
 4. ansible-playbook -i inventory upgrade_rhel7.yaml
-5. #4 will attempt to update the host and reboot. If it skips the reboot portion, you just have to wait until the **leapp upgrade** tasks is finished.
+5. #4 will attempt to update the host and reboot. 
+6. If it skips the reboot portion, you just have to wait until the **leapp upgrade** tasks is finished then reboot. Else, run #4 again to continue.
+
+
