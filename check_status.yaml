@@ -1,0 +1,68 @@
+---
+- name: In-place upgrade automated steps
+  hosts: linuxserver
+  gather_facts: yes
+#  become: yes
+  tasks: 
+  - name: verify linux distribution
+    fail:
+      msg: "linux version mismatch!"
+    when: "ansible_os_family != 'RedHat' and ansible_distribution_major_version != '6'"  
+  
+  - name: verify subscription
+    command: "subscription-manager list --installed"
+    register: command_result
+
+  - debug: 
+      var: command_result.stdout_lines
+  
+  - pause:
+      seconds: 5
+      prompt: "Verify the valid subscription"
+    
+  - name: install yum plugin versionlock if it's not found
+    yum:
+      name: yum-plugin-versionlock
+      state: latest
+      
+  - name: clear versionlock
+    command: "yum versionlock clear"
+    
+  - name: set subscription to consume the RHEL 7.6 content
+    command: "subscription-manager release --set 7.8"
+ 
+  - name: update all packages to latest RHEL 7.8 version
+    yum: 
+      name: '*'
+      state: latest
+    register: yum_result
+ 
+  - name: reboot updated system
+    shell: "sleep 5 && reboot"
+    async: 1
+    poll: 0
+    when: yum_result is changed
+
+  - name: wait for the reboot to complete if there was a change
+    wait_for_connection:
+      connect_timeout: 20
+      sleep: 5
+      delay: 5
+      timeout: 300
+    when: yum_result is changed
+
+  - name: enable the extras repository
+    command: "subscription-manager repos --enable rhel-7-server-extras-rpms"
+  
+  - name: install Leapp utility
+    yum:
+      name: leapp
+      state: latest
+
+  - name: download data files required for Leapp utility
+    get_url:
+      url: https://access.redhat.com/node/3664871/5121/0/14646321
+      dest: /etc/leapp/files/
+
+  - name: Unarchive tarball
+    command: "tar -xf /etc/leapp/files/leapp-data5.tar.gz && rm leapp-data5.tar.gz" 

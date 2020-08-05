@@ -1,0 +1,4 @@
+---
+# handlers file for in-place-upgrade
+  - name: Restart ssh
+    service: name=ssh state=restarted

@@ -1,0 +1,88 @@
+---
+# tasks file for in-place-upgrade---
+  - name: verify linux distribution
+    fail:
+      msg: "linux version mismatch!"
+    when: "ansible_os_family != 'RedHat' and ansible_distribution_major_version != '6'"  
+  
+  - name: verify subscription
+    command: "subscription-manager list --installed"
+    register: command_result
+
+  - debug: 
+      var: command_result.stdout_lines
+  
+  - pause:
+      seconds: 5
+      prompt: "Verify the valid subscription"
+
+  - name: Check if release RHEL 8.2 is enabled
+    shell: "subscription-manager release --list | grep 8.2"
+    register: release_version
+
+  - debug: msg="Release version is {{ release_version }}"
+    when: release_version.stderr == ""
+    
+  - name: install yum plugin versionlock if it's not found
+    yum:
+      name: yum-plugin-versionlock
+      state: latest
+      
+  - name: clear versionlock
+    command: "yum versionlock clear"
+    
+  - name: set subscription to consume the RHEL 7.8 content
+    command: "subscription-manager release --set 7.8"
+ 
+  - name: update all packages to latest RHEL 7.8 version
+    yum: 
+      name: '*'
+      state: latest
+    register: yum_result
+ 
+  - name: reboot updated system
+    shell: "sleep 5 && reboot"
+    async: 1
+    poll: 0
+    when: yum_result is changed
+
+  - name: wait for the reboot to complete if there was a change
+    wait_for_connection:
+      connect_timeout: 20
+      sleep: 5
+      delay: 5
+      timeout: 300
+    when: yum_result is changed
+
+  - name: enable the extras repository
+    command: "subscription-manager repos --enable rhel-7-server-extras-rpms"
+
+  - name: Allow required PermitRootLogin in SSH
+    lineinfile: dest=/etc/ssh/sshd_config
+                regexp="^PermitRootLogin no"
+                line="PermitRootLogin yes"
+                state=present
+    notify: Restart ssh
+  
+  - name: install Leapp utility
+    yum:
+      name: leapp
+      state: latest
+
+  - name: unarchive downloaded data files required for Leapp utility
+    unarchive:
+      src: leapp-data8.tar.gz
+      dest: /etc/leapp/files
+
+  - name: delete data files
+    file: 
+      path: /var/tmp/leapp-data5.tar.gz
+      state: absent
+
+  - name: leapp upgrade
+    command: "leapp upgrade"
+    register: leapp_result
+  
+  - debug:
+      var: leapp_result
+

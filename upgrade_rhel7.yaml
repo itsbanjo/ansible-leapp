@@ -1,0 +1,6 @@
+---
+- name: In-place upgrade automated steps
+  hosts: linuxserver
+  gather_facts: yes
+  roles:
+    - in-place-upgrade
